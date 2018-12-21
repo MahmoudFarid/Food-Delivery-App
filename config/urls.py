@@ -8,8 +8,7 @@ from django.views import defaults as default_views
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(settings.ADMIN_URL, admin.site.urls),
-    # User management
-    # Your stuff: custom urls includes go here
+    path("api/v1/", include(('config.routers', 'config'), namespace='api_v1')),
 ] + static(
     settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
 )

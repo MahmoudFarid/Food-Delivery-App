@@ -104,7 +104,11 @@ class Order(TimeStampedModel):
     address = models.CharField(max_length=500)
     status = models.IntegerField(choices=STATUS_CHOICES, default=PICKED)
     total_price = models.IntegerField(default=0)
+
     cooked_at = models.DateTimeField(blank=True, null=True)
+    ready_at = models.DateTimeField(blank=True, null=True)
+    on_the_way_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return str(self.id)

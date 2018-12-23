@@ -75,6 +75,6 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('id', 'restaurant', 'customer', 'orders_details', 'items_sizes', 'address', 'total_price', 'status',
-                  'cooked_at', 'ready_at', 'on_the_way_at', 'delivered_at')
+                  'comments', 'cooked_at', 'ready_at', 'on_the_way_at', 'delivered_at')
         read_only_fields = ('cooked_at', 'ready_at', 'on_the_way_at', 'delivered_at', 'status', 'orders_details',
                             'customer', 'total_price')

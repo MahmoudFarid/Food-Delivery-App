@@ -104,6 +104,7 @@ class Order(TimeStampedModel):
     address = models.CharField(max_length=500)
     status = models.IntegerField(choices=STATUS_CHOICES, default=PICKED)
     total_price = models.IntegerField(default=0)
+    comments = models.TextField(_("Comment"), null=True, blank=True)
 
     cooked_at = models.DateTimeField(blank=True, null=True)
     ready_at = models.DateTimeField(blank=True, null=True)

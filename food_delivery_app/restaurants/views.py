@@ -3,8 +3,11 @@ from django.db.models import ProtectedError
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import ValidationError
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .serializers import RestaurantSerializer, CategorySerializer, ItemSizeSerializer, ItemSerializer, OrderSerializer
 from .models import Restaurant, Item, ItemSize, Category, Order, ItemOrderDetails, ItemSizeDetails
+from .filters import OrderFilter
 
 User = get_user_model()
 
@@ -78,6 +81,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = OrderFilter
 
     def get_queryset(self):
         restaurant_id = int(self.kwargs.get('restaurant_id'))

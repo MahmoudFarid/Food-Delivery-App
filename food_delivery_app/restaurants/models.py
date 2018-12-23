@@ -34,23 +34,27 @@ class Restaurant(TimeStampedModel):
         return self.name
 
 
-class ItemCategory(TimeStampedModel):
+class Category(TimeStampedModel):
+    restaurant = models.ForeignKey("Restaurant", related_name='categories', on_delete=models.CASCADE)
     name = models.CharField(_('Name'), max_length=128)
 
     class Meta:
         verbose_name = 'Item category'
         verbose_name_plural = 'Item categories'
+        unique_together = ('name', 'restaurant')
 
     def __str__(self):
         return self.name
 
 
 class ItemSize(TimeStampedModel):
+    restaurant = models.ForeignKey("Restaurant", related_name='item_sizes', on_delete=models.CASCADE)
     name = models.CharField(_('Name'), max_length=128)
 
     class Meta:
         verbose_name = 'Item size'
         verbose_name_plural = 'Item sizes'
+        unique_together = ('name', 'restaurant')
 
     def __str__(self):
         return self.name
@@ -58,7 +62,7 @@ class ItemSize(TimeStampedModel):
 
 class Item(TimeStampedModel):
     restaurant = models.ForeignKey("Restaurant", related_name='items', on_delete=models.CASCADE)
-    category = models.ForeignKey("ItemCategory", related_name='items', on_delete=models.PROTECT)
+    category = models.ForeignKey("Category", related_name='items', on_delete=models.PROTECT)
     size = models.ManyToManyField("ItemSize", related_name='items', blank=True)
     name = models.CharField(max_length=128)
     short_description = models.CharField(max_length=128)

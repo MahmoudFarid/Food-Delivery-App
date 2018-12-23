@@ -1,7 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db.models import ProtectedError
-from rest_framework import viewsets, permissions
+from django.utils import timezone
+from rest_framework import viewsets, permissions, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -111,3 +114,32 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.total_price = order.get_total_price()
         order.save()
         return order
+
+    @action(methods=['post', 'delete'], detail=True, url_path='status', url_name='status')
+    def status(self, request, restaurant_id, pk):
+        order = self.get_object()
+        if request.method == 'POST':
+            self.update_status(order)
+        else:
+            self.cancel_order(order)
+        return Response(status=status.HTTP_200_OK, data=OrderSerializer(instance=order).data)
+
+    def update_status(self, order):
+        if order.status < len(Order.STATUS_CHOICES) - 1:
+            order.status += 1
+            if order.status == Order.COOKING:
+                order.cooked_at = timezone.now()
+            elif order.status == Order.READY:
+                order.ready_at = timezone.now()
+            elif order.status == Order.ONTHEWAY:
+                order.on_the_way_at = timezone.now()
+            elif order.status == Order.DELIVERED:
+                order.delivered_at = timezone.now()
+            order.save()
+
+    def cancel_order(self, order):
+        if order.status < Order.ONTHEWAY:
+            order.status = Order.CANCELLED
+            order.save()
+        else:
+            raise ValidationError({"errors": "Can't cancel this order"})

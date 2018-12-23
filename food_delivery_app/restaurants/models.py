@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models.functions import Coalesce
-from django.db.models import Sum
 from django.utils.translation import ugettext_lazy as _
 from django.core.validators import RegexValidator
 from django.conf import settings
@@ -63,14 +61,25 @@ class ItemSize(TimeStampedModel):
 class Item(TimeStampedModel):
     restaurant = models.ForeignKey("Restaurant", related_name='items', on_delete=models.CASCADE)
     category = models.ForeignKey("Category", related_name='items', on_delete=models.PROTECT)
-    size = models.ManyToManyField("ItemSize", related_name='items', blank=True)
+    sizes = models.ManyToManyField("ItemSize", related_name='items', through='ItemSizeDetails')
     name = models.CharField(max_length=128)
     short_description = models.CharField(max_length=128)
-    image = models.ImageField(upload_to=item_images)
-    price = models.IntegerField(default=0)
+    image = models.ImageField(upload_to=item_images, null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+
+class ItemSizeDetails(models.Model):
+    item = models.ForeignKey("Item", on_delete=models.CASCADE, related_name='size_details')
+    size = models.ForeignKey("ItemSize", on_delete=models.CASCADE, related_name='size_details')
+    price = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('item', 'size')
+
+    def __str__(self):
+        return str(self.id)
 
 
 class Order(TimeStampedModel):
@@ -91,21 +100,34 @@ class Order(TimeStampedModel):
 
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='orders', on_delete=models.CASCADE)
     restaurant = models.ForeignKey("Restaurant", related_name='orders', on_delete=models.CASCADE)
-    items = models.ManyToManyField("Item", related_name="orders", through='ItemOrderDetails')
+    items_sizes = models.ManyToManyField("ItemSizeDetails", related_name="orders", through='ItemOrderDetails')
     address = models.CharField(max_length=500)
     status = models.IntegerField(choices=STATUS_CHOICES, default=PICKED)
+    total_price = models.IntegerField(default=0)
     cooked_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return str(self.id)
 
-    @property
-    def total_price(self):
-        return self.items.aggregate(price=Coalesce(Sum('price'), 0)).get('price')
+    def get_total_price(self):
+        '''
+            Don't depend on this method, it'll get the updated price based on related objects
+            use total_price field instead of this method
+            we use this method to save/update total_price field when the order is created/updated
+        '''
+        total = 0
+        for order_detail in self.orders_details.all():
+            total += order_detail.get_total_items_price()
+        return total
 
 
 class ItemOrderDetails(models.Model):
-    item = models.ForeignKey("Item", on_delete=models.CASCADE)
-    order = models.ForeignKey("Order", on_delete=models.CASCADE)
+    item_size = models.ForeignKey("ItemSizeDetails", on_delete=models.PROTECT, related_name='orders_details')
+    order = models.ForeignKey("Order", on_delete=models.CASCADE, related_name='orders_details')
     count = models.IntegerField(default=1)
-    size = models.ForeignKey("ItemSize", on_delete=models.PROTECT, null=True, blank=True)
+
+    def __str__(self):
+        return str(self.id)
+
+    def get_total_items_price(self):
+        return self.item_size.price * self.count

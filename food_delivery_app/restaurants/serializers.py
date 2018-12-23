@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from food_delivery_app.users.serializers import UserSerializer
 
-from .models import Restaurant, Item, ItemSize, Category
+from .models import Restaurant, Item, ItemSize, Category, Order, ItemOrderDetails, ItemSizeDetails
 
 User = get_user_model()
 
@@ -42,9 +42,38 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'restaurant')
 
 
+class ItemSizeDetailsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ItemSizeDetails
+        fields = ('id', 'size', 'price')
+
+
 class ItemSerializer(serializers.ModelSerializer):
     restaurant = serializers.PrimaryKeyRelatedField(queryset=Restaurant.objects.all(), default=RestaurantDefault())
+    item_sizes = ItemSizeDetailsSerializer(many=True, write_only=True)
+    size_details = ItemSizeDetailsSerializer(many=True, read_only=True)
 
     class Meta:
         model = Item
-        fields = ('id', 'restaurant', 'category', 'size', 'name', 'short_description', 'image', 'price')
+        fields = ('id', 'restaurant', 'category', 'name', 'short_description', 'image', 'size_details', 'item_sizes')
+
+
+class ItemOrderDetailsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ItemOrderDetails
+        fields = ('id', 'item_size', 'count')
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    customer = UserSerializer(default=serializers.CurrentUserDefault())
+    restaurant = serializers.PrimaryKeyRelatedField(queryset=Restaurant.objects.all(), default=RestaurantDefault())
+    items_sizes = ItemOrderDetailsSerializer(many=True, write_only=True)
+    orders_details = ItemOrderDetailsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ('id', 'restaurant', 'customer', 'orders_details', 'items_sizes', 'address', 'total_price', 'status',
+                  'cooked_at')
+        read_only_fields = ('cooked_at', 'status', 'orders_details', 'customer', 'total_price')
